@@ -177,17 +177,17 @@ module.exports = function (kibana) {
               account.orgIds = orgs.resources.map(function(resource) { return resource.metadata.guid; });
               account.orgs = orgs.resources.map(function(resource) { return resource.entity.name; });
 
-              get(config.get('authentication.spaces_uri'), null, function(spaces) {
-                server.log(['debug', 'authentication', 'spaces'], JSON.stringify(spaces));
-                account.spaceIds = spaces.resources.map(function(resource) { return resource.metadata.guid; });
-                account.spaces = spaces.resources.map(function(resource) { return resource.entity.name; });
+              // get(config.get('authentication.spaces_uri'), null, function(spaces) {
+              //   server.log(['debug', 'authentication', 'spaces'], JSON.stringify(spaces));
+              //   account.spaceIds = spaces.resources.map(function(resource) { return resource.metadata.guid; });
+              //   account.spaces = spaces.resources.map(function(resource) { return resource.entity.name; });
                 cache.set(credentials.session_id, {credentials: credentials, account: account}, 0, function(err) {
                   if (err) {
                     server.log(['error', 'authentication', 'session:set'], JSON.stringify(err));
                   }
                   return callback();
                 });
-              });
+              // });
             });
           });
         }
@@ -356,7 +356,7 @@ function filterQuery(payload, cached) {
     bool.must = [bool.must];
   }
   bool.must.push(
-    {'terms': {'@cf.space_id': cached.account.spaceIds}},
+    // {'terms': {'@cf.space_id': cached.account.spaceIds}},
     {'terms': {'@cf.org_id': cached.account.orgIds}}
   );
   return payload;
