@@ -10,30 +10,37 @@ This page lists most popular customizations that can be done using configuration
 
 #### Index name
 
-To use custom index name it's enough to set `logstash_parser.elasticsearch_index` property in deployment manifest:
+To use custom index name it's enough to set `logstash_parser.elasticsearch.index` property in deployment manifest:
 
 ```yaml
 properties:
   logstash_parser:
-    elasticsearch_index: "logs-my_custom_name"
+    elasticsearch:
+      index: "logs-my_custom_name"
 ```
 
 Please note that __logs-__ prefix should be kept in a new name so that [Elasticsearch mappings](features.md#elasticsearch-mappings) be still applied.
 
 #### Parsing rules
 
-To add custom parsing use `logstash_parser.filters` property of `parser` job:
+To add custom parsing use `logstash_parser.filters` property of `parser` job. You can either pass a list of file paths there:
 
 ```yaml
 - name: parser
   properties:
     logstash_parser:
       filters:
-      - logsearch-for-cf: /var/vcap/packages/logsearch-for-cloudfoundry-filters/logstash-filters-default.conf
+      - logsearch-for-cf: /var/vcap/packages/logsearch-config-logstash-filters/logstash-filters-default.conf
       - my-custom-rules: /path/to/my/custom/rules
-      - my-other-custom-rules: { .. }
 ```
-You can provide your custom parsing rules in two ways - 1) using a path to a file containing rules or 2) putting a block of code with rules.
+or put a block of code with your parsing rules:
+```yaml
+- name: parser
+  properties:
+    logstash_parser:
+      filters: { .. }
+```
+Note that the latter possibility overrides Logsearch-for-cloudfoundry parsing rules, while the former can be used in both ways - to append your custom parsing rules to the Logsearch-for-cloudfoundry parsing and to override them.
 
 Please do mind **the order** of parsing rules you specify.
 
@@ -45,11 +52,11 @@ Elasticsearch mappings can be customized via `elasticsearch_config.templates` pr
 - name: maintenance
   templates:
   - (( merge ))
-  - {name: logsearch-for-cloudfoundry-filters, release: logsearch-for-cloudfoundry}
+  - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
   properties:
     elasticsearch_config:
       templates:
-      - index_template: /var/vcap/packages/logsearch-for-cloudfoundry-filters/logs-template.json
+      - index_template: /var/vcap/packages/logsearch-config-es-mappings/logs-template.json
       - my_custom_mappings_template: /path/to/my-template.json
 ```
 
@@ -57,14 +64,16 @@ Please pay attention that [_Elasticsearch mappings ordering_](https://www.elasti
 
 #### Kibana saved objects
 
-To make Logsearch-for-cloudfoundry upload your custom Kibana saved objects (searches, visualizations, dashboards etc.) use `kibana_objects.upload_data_files` property of `upload-kibana-objects` job:
+To disable upload of predefined Kibana objects, provided by the job, set `kibana_objects.upload_predefined_kibana_objects: false`. To make Logsearch-for-cloudfoundry upload your custom Kibana saved objects (searches, visualizations, dashboards etc.) use `kibana_objects.upload_data_files` property of `upload-kibana-objects` job:
 
 ```yaml
 - name: upload-kibana-objects
+  ...
   properties:
+    ...
     kibana_objects:
-      upload_data_files:
-        - /var/vcap/packages/logsearch-for-cloudfoundry-filters/kibana-objects-bulk-json
+      upload_predefined_kibana_objects: false # Whether to upload Kibana objects predefined in this job or not.
+      upload_data_files: # List of text files to put in API endpoint /_bulk
         - /path/to/your/custom/kibana/objects/bulk/json/file
 ```
 

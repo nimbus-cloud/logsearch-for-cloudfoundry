@@ -1,22 +1,27 @@
 require 'erb'
 require 'rake'
 
+# Clean tasks
 task :clean do
-  mkdir_p "target"
-  rm_rf "target/*"
+  FileUtils.mkdir_p('target')
+  FileUtils.rm_rf(Dir.glob('target/*'))
 end
 
-desc "Builds Logstash filters, Elasticsearch mappings & Kibana objects"
+# Build tasks
+desc "Builds Logstash filters"
 task :build => :clean do
+  build_erb 'src/logstash-filters/default.conf.erb', 'target/logstash-filters-default.conf'
+end
+
+def build_erb(source_erb_file, target_file)
   puts "===> Building ..."
-  compile_erb 'src/logstash-filters/default.conf.erb', 'target/logstash-filters-default.conf'
-  compile_erb 'src/es-mappings/logs-template.json.erb', 'target/logs-template.json'
-  compile_erb 'src/kibana-objects/kibana-objects-bulk-json.erb', 'target/kibana-objects-bulk-json'
+  compile_erb source_erb_file, target_file
 
   puts "===> Artifacts:"
   puts `find target`
 end
 
+# Test tasks
 desc "Runs unit tests against filters"
 task :utest, [:rspec_files] => :build do |t, args|
   args.with_defaults(:rspec_files => "$(find test -name *-spec.rb ! -name *-it-spec.rb)")
@@ -31,13 +36,6 @@ task :itest, [:rspec_files] => :build do |t, args|
   sh %Q[ vendor/logstash/bin/rspec #{args[:rspec_files]} --colour ]
 end
 
-desc "Runs JSON validation tests"
-task :json, [:json_files] => :build do |t, args|
-  args.with_defaults(:json_files => "$(find target -name *.json)")
-  puts "===> Validating JSON data ..."
-  sh %Q[ jsonlint #{args[:json_files]} ]
-end
-
 desc "Runs YAML validation tests"
 task :yaml, [:yaml_files] => :build do |t, args|
   args.with_defaults(:yaml_files => "$(find ../.. -path ../../src -prune -o -name '*.yml' -print)")
@@ -48,7 +46,6 @@ end
 task default: [
   :utest,
   :itest,
-  :json,
   :yaml
 ]
 

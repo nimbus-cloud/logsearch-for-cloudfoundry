@@ -1,0 +1,111 @@
+releases:
+- (( merge ))
+- name: logsearch-for-cloudfoundry
+  version: latest
+
+jobs:
+- (( merge ))
+- name: ingestor
+  templates:
+  - (( merge ))
+  - {name: ingestor_cloudfoundry-firehose, release: logsearch-for-cloudfoundry}
+  properties:
+    cloudfoundry:
+      api_endpoint: https://api.VAR_CF_DOMAIN
+      doppler_endpoint: wss://doppler.VAR_CF_DOMAIN
+      firehose_user: admin  # CF UAA username of user with 'doppler.firehose' permissions
+      firehose_password: VAR_CF_SECRET  # CF UAA password of user with 'doppler.firehose' permissions
+      firehose_events: LogMessage  # Default value. Comma seperated list of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
+      skip_ssl_validation: true
+    syslog:
+      host: (( grab jobs.ingestor.networks.[0].static_ips.[0] ))
+      port: 5514
+
+- name: parser
+  templates:
+  - (( merge ))
+  - {name: parser-config-lfc, release: logsearch-for-cloudfoundry}
+  properties:
+    logstash_parser:
+      debug: false
+      elasticsearch:
+        index: "logs-%{[@metadata][index]}-%{+YYYY.MM.dd}"
+        index_type: "%{@type}"
+      filters:
+      - logsearch-for-cf: /var/vcap/packages/logsearch-config-logstash-filters/logstash-filters-default.conf
+      deployment_dictionary: 
+      - /var/vcap/packages/logsearch-config/deployment_lookup.yml
+      - /var/vcap/jobs/parser-config-lfc/config/deployment_lookup.yml
+      deployment_name:
+        cf: my_cf
+        diego: my_cf-diego
+
+- name: maintenance
+  templates:
+  - (( merge ))
+  - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
+  properties:
+    elasticsearch_config:
+      index_prefix: "logs-"  # Make sure the prefix matches `logstash_parser.elasticsearch.index` property set for your `parser`.
+      templates:
+        - shards-and-replicas: /var/vcap/jobs/elasticsearch_config/index-templates/shards-and-replicas.json
+        - index-settings: /var/vcap/jobs/elasticsearch_config/index-templates/index-settings.json
+        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json  # upload mappings defined in Logsearch-f-c
+
+- name: create-uaa-client
+  lifecycle: errand
+  release: logsearch-for-cloudfoundry
+  instances: 1
+  templates:
+  - {name: create-uaa-client, release: logsearch-for-cloudfoundry}
+  networks:
+  - name: default
+  resource_pool: errand
+  properties:
+    create-uaa-client:
+      kibana_domain: elk.VAR_CF_DOMAIN  # The Kibana dashboard domain. Is used for redirects. (Technically, it should be set with your ls-router IP)
+      oauth2_client_id: my_kibana_client_id  # Default value. The UAA Kibana oauth2 client id. Put an existing client id or one you want the job to create. Note the client required scopes: `openid,oauth.approvals,scim.userids,cloud_controller.read`.
+      oauth2_client_secret: my_kibana_client_password  # The UAA Kibana oauth2 client id's secret
+      cloudfoundry:
+        system_domain: VAR_CF_DOMAIN
+        uaa_admin_client_id: admin  # The UAA admin client id (required scope is `uaa.admin`). The admin client is used to manage the UAA Kibana oauth2 client.
+        uaa_admin_client_secret: VAR_CF_SECRET  # The UAA admin client's secret
+
+- name: upload-kibana-objects
+  lifecycle: errand
+  release: logsearch-for-cloudfoundry
+  instances: 1
+  templates:
+  - {name: upload-kibana-objects, release: logsearch-for-cloudfoundry}
+  networks:
+  - name: default
+  resource_pool: errand
+  properties:
+    elasticsearch:
+      host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
+      port: 9200
+    cloudfoundry:
+      firehose_events: (( grab jobs.ingestor.properties.cloudfoundry.firehose_events ))
+    kibana_objects:
+      upload_predefined_kibana_objects: true # Default value. Whether to upload Kibana objects (defaults predefined in this job) or not.
+      upload_data_files: []  # List of text files to put in API endpoint /_bulk
+
+- name: kibana
+  templates:
+  - (( merge ))
+  - {name: kibana-auth-plugin, release: logsearch-for-cloudfoundry}
+  properties:
+    kibana:
+      env:
+      - KIBANA_DOMAIN: (( grab jobs.create-uaa-client.properties.create-uaa-client.kibana_domain ))
+      - KIBANA_OAUTH2_CLIENT_ID: (( grab jobs.create-uaa-client.properties.create-uaa-client.oauth2_client_id  ))
+      - KIBANA_OAUTH2_CLIENT_SECRET: (( grab jobs.create-uaa-client.properties.create-uaa-client.oauth2_client_secret ))
+      - SKIP_SSL_VALIDATION: (( grab jobs.ingestor.properties.cloudfoundry.skip_ssl_validation ))
+      - CF_API_URI: (( grab jobs.ingestor.properties.cloudfoundry.api_endpoint ))
+      - CF_SYSTEM_ORG: admin  # Org Managers of this org get admin access to data in Kibana
+      - REDIS_HOST: (( grab jobs.queue.networks.default.static_ips.[0] ))  # Redis host to use for auth sessions
+      - SESSION_EXPIRATION_MS: 43200000
+      - NODE_ENV: production
+      - USE_HTTPS: false
+      plugins:
+      - auth: /var/vcap/packages/kibana-auth-plugin/kibana-auth-plugin.tar.gz

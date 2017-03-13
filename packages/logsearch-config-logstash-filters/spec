@@ -1,0 +1,10 @@
+---
+name: logsearch-config-logstash-filters
+
+dependencies:
+  - ruby-2.3
+
+files:
+  - logsearch-config/bin/*
+  - logsearch-config/src/logstash-filters/**/*
+  - logsearch-config/*

@@ -11,6 +11,18 @@ For application logs CloudFoundry has [_firehose_](https://github.com/cloudfound
 
 So, as the result, CloudFoundry logs (both platform and application) appear in syslog and get processed by Logsearch.
 
+#### Exclude an application from getting its logs in ELK
+
+There is a possibility for CF applications to opt-out of getting their logs in ELK. Technically, the logs "filtering" of such applications is made in the _firehose-to-syslog_ util, so the logs of "ignored" apps do not appear in syslog and, consequently, they don't get into ELK.
+
+To disable logs getting into ELK for an application you need to set the environment variable `F2S_DISABLE_LOGGING=true` for this app:
+```sh
+$ cf set-env YOUR_APP_NAME F2S_DISABLE_LOGGING true
+```
+No app restaging is necessary.
+
+Set the `F2S_DISABLE_LOGGING` to `false` when you whant to make this app logs appear in ELK again.
+
 #### Logstash parsing rules
 
 Logsearch has a set of parsing rules for syslog formats. And it's a good start in general case.
@@ -21,7 +33,7 @@ For more details on parsing please visit [Logs parsing](logs-parsing.md) page.
 
 #### Elasticsearch mappings
 
-Logsearch-for-cloudfoundry provides Elasticsearch [mappings](../src/logsearch-config/src/es-mappings) for logs index. The mappings include reasonable rules for making the parsed fields useful in data analysis. They include:
+Logsearch-for-cloudfoundry provides Elasticsearch [mappings](../jobs/elasticsearch-config-lfc/templates/index-mappings.json.erb) for logs index. The mappings include reasonable rules for making the parsed fields useful in data analysis. They include:
 
 * Make `*_id` fields *not_analyzed*. 
 
@@ -47,13 +59,31 @@ From technical point of view, the authorization mechanism applies additional fil
 
 The plugin is delivered in Logsearch-for-cloudfoundry deployment with _cf-kibana_ job (case of Kibana deployed to CloudFoundry) and as a plugin installed to standalone Kibana provided by Logsearch deployment.
 
+##### Redirect after logout
+Kibana authentication plugin redirects user to UAA UI for user login and logout accordingly. If you want to get redirected back to the Kibana application after user logout, make sure to enable "redirects after logout" feture in UAA server that you are using. This feature is [disabled](https://github.com/cloudfoundry/uaa/blob/3.9.3/uaa/src/main/webapp/WEB-INF/spring-servlet.xml#L440) by default in UAA. You can enable it in the deployment manifest of your UAA. Example:
+```
+properties:
+...
+login:
+  logout:
+    redirect:
+      url: /login
+      parameter:
+        disable: false
+        whitelist:
+        - https://my_kibana_domain/login
+        - http://my_kibana_domain/login
+...
+```
+(example is built based on the [UAA logout config](https://github.com/cloudfoundry/uaa/blob/3.9.3/uaa/src/main/resources/login.yml#L38-L45) and [UAA-release spec](https://github.com/cloudfoundry/uaa-release/blob/v24/jobs/uaa/spec#L190-L199))
+
 #### Kibana saved objects
 
 Kibana allows to save searches, visualizations, and dashboards and then reuse them when searching data. 
 
-To make some start in logs analysis, Logsearch-for-cloudfoundry creates index patterns and a set of predefined searches, visualizations and dashboards in Kibana. These [saved objects](../src/logsearch-config/src/kibana-objects) are uploaded to Elasticsearch (.kibana index) during deploy.
+To make some start in logs analysis, Logsearch-for-cloudfoundry creates index patterns and a set of predefined searches, visualizations and dashboards in Kibana. These predefined [Kibana objects](../jobs/upload-kibana-objects/templates/kibana-objects) are uploaded to Elasticsearch (.kibana index) during deploy. Logsearch-for-cloudfoundry allows to skip upload of the defaults and also to specify custom data files to be uploaded to Kibana during deploy (see [Customization](customization.md) page).
 
-The upload of Kibana objects is optional step and can be ommited. Also, any of uploaded Kibana objects can be deleted then using Kibana interface.
+Note that any of uploaded Kibana objects can be deleted/modified then using Kibana interface.
 
 #### Possibility to deploy Kibana as CloudFoundry application
 
