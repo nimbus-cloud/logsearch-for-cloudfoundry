@@ -112,8 +112,9 @@ $ bosh run errand smoke-tests
 ```yaml
 properties:
   syslog_daemon_config:
-    address: ls-router-static-ip
+    address: ls-router-static-ip    
     port: 5514
+    transport: tcp   # default is udp. Check your security groups: port + transport should be open 
 ```
 
 ### 9. Update CloudFoundry deployment to include ELK URI to the whitelist of UAA logout redirects
@@ -135,5 +136,7 @@ login:
 ...
 ```
 > NOTE: If you skip this step, the UAA authentication will still be working in Kibana, but your ability to get automatically redirected to the Kibana home page after logout will be lost. Read more about [the redirect feature](features.md#redirect-after-logout) if necessary.
+
+</br>If you meet any problems with deployment after you have finished, please double check [common issues](troubleshooting.md#common-issues) section first - there you can find a clue for your problem.
 
 </br>[<- prev page](jobs.md) | [next page ->](logs-parsing.md)

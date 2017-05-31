@@ -12,14 +12,36 @@ jobs:
   properties:
     cloudfoundry:
       api_endpoint: https://api.VAR_CF_DOMAIN
-      doppler_endpoint: wss://doppler.VAR_CF_DOMAIN
-      firehose_user: admin  # CF UAA username of user with 'doppler.firehose' permissions
-      firehose_password: VAR_CF_SECRET  # CF UAA password of user with 'doppler.firehose' permissions
-      firehose_events: LogMessage  # Default value. Comma seperated list of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
+      firehose_client_id: firehose-to-syslog # UAA client with 'doppler.firehose' permissions
+      firehose_client_secret: VAR_CF_SECRET # UAA password of client with 'doppler.firehose' permissions
+      firehose_events: LogMessage # Default value. Comma seperated list of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
       skip_ssl_validation: true
     syslog:
-      host: (( grab jobs.ingestor.networks.[0].static_ips.[0] ))
+      host: (( grab jobs.ls-router.networks.[0].static_ips.[0] ))
       port: 5514
+    create-uaa-client:
+      cloudfoundry:
+        system_domain: (( grab jobs.create-uaa-client.properties.create-uaa-client.cloudfoundry.system_domain ))
+        uaa_admin_client_id: (( grab jobs.create-uaa-client.properties.create-uaa-client.cloudfoundry.uaa_admin_client_id ))
+        uaa_admin_client_secret: (( grab jobs.create-uaa-client.properties.create-uaa-client.cloudfoundry.uaa_admin_client_secret ))
+
+- name: ls-router
+  templates:
+  - (( merge ))
+  - {name: route_registrar, release: logsearch-for-cloudfoundry}
+  properties:
+    nats:
+      machines: []
+      password: nats_password
+      port: 4222
+      user: nats_user
+    route_registrar:
+      routes:
+      - name: kibana
+        registration_interval: 60s
+        port: 80
+        uris:
+        - (( grab jobs.create-uaa-client.properties.create-uaa-client.kibana_domain ))
 
 - name: parser
   templates:
@@ -33,7 +55,7 @@ jobs:
         index_type: "%{@type}"
       filters:
       - logsearch-for-cf: /var/vcap/packages/logsearch-config-logstash-filters/logstash-filters-default.conf
-      deployment_dictionary: 
+      deployment_dictionary:
       - /var/vcap/packages/logsearch-config/deployment_lookup.yml
       - /var/vcap/jobs/parser-config-lfc/config/deployment_lookup.yml
       deployment_name:
@@ -46,11 +68,13 @@ jobs:
   - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
   properties:
     elasticsearch_config:
-      index_prefix: "logs-"  # Make sure the prefix matches `logstash_parser.elasticsearch.index` property set for your `parser`.
       templates:
         - shards-and-replicas: /var/vcap/jobs/elasticsearch_config/index-templates/shards-and-replicas.json
         - index-settings: /var/vcap/jobs/elasticsearch_config/index-templates/index-settings.json
-        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json  # upload mappings defined in Logsearch-f-c
+        - index-mappings: /var/vcap/jobs/elasticsearch_config/index-templates/index-mappings.json
+        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json
+        - index-mappings-app-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-app.json
+        - index-mappings-platform-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-platform.json
 
 - name: create-uaa-client
   lifecycle: errand
@@ -63,7 +87,7 @@ jobs:
   resource_pool: errand
   properties:
     create-uaa-client:
-      kibana_domain: elk.VAR_CF_DOMAIN  # The Kibana dashboard domain. Is used for redirects. (Technically, it should be set with your ls-router IP)
+      kibana_domain: (( concat "logs." jobs.create-uaa-client.properties.create-uaa-client.cloudfoundry.system_domain )) # The Kibana dashboard domain.
       oauth2_client_id: my_kibana_client_id  # Default value. The UAA Kibana oauth2 client id. Put an existing client id or one you want the job to create. Note the client required scopes: `openid,oauth.approvals,scim.userids,cloud_controller.read`.
       oauth2_client_secret: my_kibana_client_password  # The UAA Kibana oauth2 client id's secret
       cloudfoundry:
@@ -108,4 +132,10 @@ jobs:
       - NODE_ENV: production
       - USE_HTTPS: false
       plugins:
-      - auth: /var/vcap/packages/kibana-auth-plugin/kibana-auth-plugin.tar.gz
+      - auth: /var/vcap/packages/kibana-auth-plugin/kibana-auth-plugin.zip
+
+properties:
+  elasticsearch_config:
+    index_prefix: "logs-"  # Name prefix of your log indices that you use in `logstash_parser.elasticsearch.index` property set for your parser.
+    app_index_prefix: "logs-app"  # Name prefix of your `app` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
+    platform_index_prefix: "logs-platform"  # Name prefix of your `platform` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.

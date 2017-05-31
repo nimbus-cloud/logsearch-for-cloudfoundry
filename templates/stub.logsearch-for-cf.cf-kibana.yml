@@ -21,7 +21,7 @@ jobs:
         index_type: "%{@type}"
       filters:
       - logsearch-for-cf: /var/vcap/packages/logsearch-config-logstash-filters/logstash-filters-default.conf
-      deployment_dictionary: 
+      deployment_dictionary:
       - /var/vcap/packages/logsearch-config/deployment_lookup.yml
       - /var/vcap/jobs/parser-config-lfc/config/deployment_lookup.yml
       deployment_name:
@@ -34,11 +34,14 @@ jobs:
   - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
   properties:
     elasticsearch_config:
-      index_prefix: "logs-"  # Make sure the prefix matches `logstash_parser.elasticsearch.index` property set for your `parser`.
       templates:
         - shards-and-replicas: /var/vcap/jobs/elasticsearch_config/index-templates/shards-and-replicas.json
         - index-settings: /var/vcap/jobs/elasticsearch_config/index-templates/index-settings.json
-        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json  # upload mappings defined in Logsearch-f-c
+        - index-mappings: /var/vcap/jobs/elasticsearch_config/index-templates/index-mappings.json
+        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json
+        - index-mappings-app-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-app.json
+        - index-mappings-platform-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-platform.json
+
 
 - name: cf-kibana
   templates:
@@ -74,7 +77,7 @@ jobs:
       host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
       port: 9200
     cloudfoundry:
-      firehose_events: (( grab properties.cloudfoundry.firehose_events ))  
+      firehose_events: (( grab properties.cloudfoundry.firehose_events ))
     kibana_objects:
       upload_predefined_kibana_objects: true # Default value. Whether to upload Kibana objects predefined in this job or not.
       upload_data_files: []  # List of text files to put in API endpoint /_bulk
@@ -82,9 +85,10 @@ jobs:
 properties:
   cloudfoundry:
     api_endpoint: https://api.my_sys.cf.example
-    doppler_endpoint: wss://doppler.my_sys.cf.example
-    firehose_user: my_admin_user  # CF UAA username of user with 'doppler.firehose' permissions
-    firehose_password: my_admin_password  # CF UAA password of user with 'doppler.firehose' permissions
+    admin_user: admin
+    admin_password: admin # Passsword of the CF admin user
+    firehose_client_id: firehose-to-syslog # UAA client with 'doppler.firehose' permissions
+    firehose_client_secret: VAR_CF_SECRET # UAA password of client with 'doppler.firehose' permissions
     firehose_events: LogMessage  # Default value. Comma seperated list of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
     skip_ssl_validation: true
   cf-kibana:
@@ -99,14 +103,23 @@ properties:
       api_security_group: my_cf_api_security_group  # CF security group with API access
     elasticsearch:
       host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
+  create-uaa-client:
+    cloudfoundry:
+      system_domain: (( grab properties.cf-kibana.cloudfoundry.system_domain ))
+      uaa_admin_client_id: (( grab properties.cf-kibana.cloudfoundry.uaa_admin_client_id ))
+      uaa_admin_client_secret: (( grab properties.cf-kibana.cloudfoundry.uaa_admin_client_secret ))
+  elasticsearch_config:
+    index_prefix: "logs-"  # Name prefix of your log indices that you use in `logstash_parser.elasticsearch.index` property set for your parser.
+    app_index_prefix: "logs-app"  # Name prefix of your `app` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
+    platform_index_prefix: "logs-platform"  # Name prefix of your `platform` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
   syslog:
-    host: (( grab jobs.ingestor.networks.[0].static_ips.[0] ))
+    host: (( grab jobs.ls-router.networks.[0].static_ips.[0] ))
     port: 5514
   smoke_tests:
     api: (( grab properties.cloudfoundry.api_endpoint ))
     apps_domain: (( grab properties.cf-kibana.cloudfoundry.apps_domain ))
-    admin_user: (( grab properties.cloudfoundry.firehose_user ))
-    admin_password: (( grab properties.cloudfoundry.firehose_password ))
+    admin_user: (( grab properties.cloudfoundry.admin_user ))
+    admin_password: (( grab properties.cloudfoundry.admin_password ))
     elasticsearch_master:
       host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
       port: 9200
