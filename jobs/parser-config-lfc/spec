@@ -6,6 +6,7 @@ packages:
 
 templates:
   deployment_lookup.yml.erb: config/deployment_lookup.yml
+  dedicated_cf_orgs_lookup.yml.erb: config/dedicated_cf_orgs_lookup.yml
 
 properties:
   logstash_parser.deployment_name.cf:
@@ -14,3 +15,6 @@ properties:
   logstash_parser.deployment_name.diego:
     description: "Name of Cloud Foundry diego deployment (if there is one). Diego jobs are mapped to this value in deployment_lookup.yml dictionary file."
     default: cloudfoundry-diego
+  logstash_parser.dedicated_cf_orgs:
+    description: "List of Cloud Foundry orgs that should have didicated indicies"
+    default: []
