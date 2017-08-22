@@ -6,25 +6,25 @@ curl -s \
     -X PUT \
     -d '{"index.routing.allocation.exclude.name" : "es_data_*"}' \
     '<%= p('dedicated-shard-routing.elasticsearch.host') %>:<%= p('dedicated-shard-routing.elasticsearch.port') %>/logs-app-20*/_settings'
-echo "1"
+echo ": index routing for all"
 
 curl -s \
     -X PUT \
     -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated-shard-routing.index_prefix') %>-20*"}' \
     '<%= p('dedicated-shard-routing.elasticsearch.host') %>:<%= p('dedicated-shard-routing.elasticsearch.port') %>/_template/template_all-orgs'
-echo "2"
+echo ": index template for all"
 
 <% p('dedicated-shard-routing.dedicated_cf_orgs').each do | org | %>
 curl -s \
     -X PUT \
     -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated-shard-routing.index_prefix') %>-<%= org.downcase %>-*"}' \
     '<%= p('dedicated-shard-routing.elasticsearch.host') %>:<%= p('dedicated-shard-routing.elasticsearch.port') %>/_template/template_<%= org.downcase %>'
-echo "3 <%= org.downcase %>"
+echo ": index template for <%= org.downcase %>"
 
 curl -s \
     -X PUT \
     -d '{"index.routing.allocation.exclude.name" : "elasticsearch_data*", "index.routing.allocation.require.name" : "es_data_<%= org.downcase %>*"}' \
     '<%= p('dedicated-shard-routing.elasticsearch.host') %>:<%= p('dedicated-shard-routing.elasticsearch.port') %>/<%= p('dedicated-shard-routing.index_prefix') %>-<%= org.downcase %>-*/_settings'
-echo "4 <%= org.downcase %>"
+echo ": index routing for <%= org.downcase %>"
 
 <% end %>
