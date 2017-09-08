@@ -1,0 +1,22 @@
+---
+name: dedicated-shard-routing
+
+description: This job uploads routing rules for events that belog to CF orgs that have dedicated nodes
+
+packages: []
+
+templates:
+  bin/run.erb: bin/run
+
+properties:
+
+  dedicated-shard-routing.elasticsearch.host:
+    description: Elasticsearch host
+  dedicated-shard-routing.elasticsearch.port:
+    description: Elasticsearch port
+    default: 9200
+  dedicated-shard-routing.dedicated_cf_orgs:
+    description: List of Cloud Foundry orgs that should have didicated indicies
+    default: []
+  dedicated-shard-routing.index_prefix:
+    default: logs-app

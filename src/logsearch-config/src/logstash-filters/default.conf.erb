@@ -12,6 +12,7 @@
 <%= File.read('src/logstash-filters/snippets/app.conf') %>
 # special cases parsing
 <%= File.read('src/logstash-filters/snippets/app-logmessage.conf') %>
+<%= File.read('src/logstash-filters/snippets/app-json.conf') %>
 <%= File.read('src/logstash-filters/snippets/app-logmessage-app.conf') %>
 <%= File.read('src/logstash-filters/snippets/app-logmessage-rtr.conf') %>
 <%= File.read('src/logstash-filters/snippets/app-error.conf') %>
@@ -19,6 +20,7 @@
 <%= File.read('src/logstash-filters/snippets/app-valuemetric.conf') %>
 <%= File.read('src/logstash-filters/snippets/app-counterevent.conf') %>
 <%= File.read('src/logstash-filters/snippets/app-http.conf') %>
+<%= File.read('src/logstash-filters/snippets/app-dedicated_cf_orgs.conf') %>
 
 ##-- Platform
 # (Platform snippet should precede all other platform snippets)

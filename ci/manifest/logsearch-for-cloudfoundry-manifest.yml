@@ -12,7 +12,7 @@ jobs:
 - name: parser
   templates:
   - (( merge ))
-  - {name: logsearch-for-cloudfoundry-filters, release: logsearch-for-cloudfoundry}
+  - {name: parser-config-lfc, release: logsearch-for-cloudfoundry}
   properties:
     logstash_parser:
       debug: false
@@ -20,8 +20,8 @@ jobs:
         index: "logs-%{[@metadata][index]}-%{+YYYY.MM.dd}"
         index_type: "%{@type}"
       filters:
-      - logsearch-for-cf: /var/vcap/packages/logsearch-for-cloudfoundry-filters/logstash-filters-default.conf
-      deployment_dictionary: /var/vcap/jobs/logsearch-for-cloudfoundry-filters/config/deployment_lookup.yml
+      - logsearch-for-cf: /var/vcap/packages/logsearch-config-logstash-filters/logstash-filters-default.conf
+      deployment_dictionary: /var/vcap/jobs/parser-config-lfc/config/deployment_lookup.yml
       deployment_name:
         cf: my_cf
         diego: my_cf-diego
@@ -29,11 +29,16 @@ jobs:
 - name: maintenance
   templates:
   - (( merge ))
-  - {name: logsearch-for-cloudfoundry-filters, release: logsearch-for-cloudfoundry}
+  - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
   properties:
     elasticsearch_config:
       templates:
-      - index_template: /var/vcap/packages/logsearch-for-cloudfoundry-filters/logs-template.json
+        - shards-and-replicas: /var/vcap/jobs/elasticsearch_config/index-templates/shards-and-replicas.json
+        - index-settings: /var/vcap/jobs/elasticsearch_config/index-templates/index-settings.json
+        - index-mappings: /var/vcap/jobs/elasticsearch_config/index-templates/index-mappings.json
+        - index-mappings-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings.json
+        - index-mappings-app-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-app.json
+        - index-mappings-platform-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-platform.json
 
 - name: cf-kibana
   templates:
@@ -68,11 +73,15 @@ jobs:
     elasticsearch:
       host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
       port: 9200
+    cloudfoundry:
+      firehose_events: (( grab properties.cloudfoundry.firehose_events ))  
     kibana_objects:
-      upload_data_files:
-        - /var/vcap/packages/logsearch-for-cloudfoundry-filters/kibana-objects-bulk-json
+      upload_predefined_kibana_objects: true 
+      upload_data_files: []  
 
 properties:
+  cloudfoundry:
+    firehose_events: LogMessage    
   cf-kibana:
     oauth2_client_secret: oauth2_client_secret
     cloudfoundry:
@@ -83,6 +92,10 @@ properties:
       api_security_group: a-group
     elasticsearch:
       host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
+  elasticsearch_config:
+      index_prefix: "logs-"  # Name prefix of your log indices that you use in `logstash_parser.elasticsearch.index` property set for your parser.
+      app_index_prefix: "logs-app"  # Name prefix of your `app` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
+      platform_index_prefix: "logs-platform"  # Name prefix of your `platform` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
   syslog:
     host: (( grab jobs.ingestor.networks.[0].static_ips.[0] ))
     port: 5514

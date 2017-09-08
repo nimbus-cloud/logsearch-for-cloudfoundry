@@ -4,7 +4,7 @@
 $app_event_dummy = {
     "@type" => "syslog",
     "syslog_program" => "doppler",
-    "syslog_pri" => "6",
+    "syslog_pri" => 6,
     "syslog_severity_code" => 3, # error
     "host" => "bed08922-4734-4d62-9eba-3291aed1b8ce",
     "@message" => "Dummy message"}
@@ -14,7 +14,7 @@ $envelope_fields = {
     "deployment" => "cf-full",
     "ip" => "192.168.111.32",
     "job" => "runner_z1",
-    "index" => 4,
+    "job_index" => "4abc5def",
     "origin" => "MetronAgent",
     "time" => "2016-08-16T22:46:24Z"
 }
@@ -77,15 +77,14 @@ def verify_app_general_fields (metadata_index, type, source_type, message, level
 
   it { expect(subject["@input"]).to eq "syslog" }
 
-  it { expect(subject["@shipper"]["priority"]).to eq "6" }
+  it { expect(subject["@shipper"]["priority"]).to eq 6 }
   it { expect(subject["@shipper"]["name"]).to eq "doppler_syslog" }
 
   it "sets @source fields" do
     expect(subject["@source"]["deployment"]).to eq "cf-full"
     expect(subject["@source"]["host"]).to eq "192.168.111.32"
     expect(subject["@source"]["job"]).to eq "runner_z1"
-    expect(subject["@source"]["instance"]).to eq 4
-    expect(subject["@source"]["name"]).to eq ("runner_z1/4")
+    expect(subject["@source"]["job_index"]).to eq "4abc5def"
     expect(subject["@source"]["component"]).to eq "MetronAgent"
     expect(subject["@source"]["type"]).to eq source_type
   end
@@ -102,7 +101,6 @@ end
 def verify_app_cf_fields (app_instance)
 
   it "sets @cf fields" do
-    expect(subject["@cf"]["origin"]).to eq "firehose"
     expect(subject["@cf"]["app"]).to eq "loggenerator"
     expect(subject["@cf"]["app_id"]).to eq "31b928ee-4110-4e7b-996c-334c5d7ac2ac"
     expect(subject["@cf"]["app_instance"]).to eq app_instance
