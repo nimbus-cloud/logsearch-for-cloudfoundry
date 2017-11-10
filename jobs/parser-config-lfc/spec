@@ -7,6 +7,7 @@ packages:
 templates:
   deployment_lookup.yml.erb: config/deployment_lookup.yml
   logstash-filters-custom.conf.erb: config/logstash-filters-custom.conf
+  dedicated_cf_orgs_lookup.yml.erb: config/dedicated_cf_orgs_lookup.yml
 
 properties:
   logstash_parser.deployment_name.cf:
@@ -29,3 +30,6 @@ properties:
       Custom logstash filters that will be appended to the logstash filters list.
       Populates the file /var/vcap/jobs/logsearch-for-cloudfoundry-filters/config/logstash-filters-custom.conf
     default: ""
+  logstash_parser.dedicated_cf_orgs:
+    description: "List of Cloud Foundry orgs that should have didicated indicies"
+    default: []

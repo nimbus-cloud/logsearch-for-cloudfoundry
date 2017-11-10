@@ -20,6 +20,7 @@ jobs:
       deployment_dictionary:
       - /var/vcap/packages/logsearch-config/deployment_lookup.yml
       - /var/vcap/jobs/parser-config-lfc/config/deployment_lookup.yml
+      - /var/vcap/jobs/parser-config-lfc/config/dedicated_cf_orgs_lookup.yml
       deployment_name:
         cf: my_cf
         diego: my_cf-diego
@@ -86,6 +87,20 @@ jobs:
     kibana_objects:
       upload_predefined_kibana_objects: true # Default value. Whether to upload Kibana objects predefined in this job or not.
       upload_data_files: []  # List of text files to put in API endpoint /_bulk
+
+- name: dedicated-shard-routing
+  instances: 1
+  lifecycle: errand
+  templates:
+  - {name: dedicated-shard-routing, release: logsearch-for-cloudfoundry}
+  resource_pool: errand
+  networks:
+  - name: default
+  properties:
+    dedicated-shard-routing:
+      elasticsearch:
+        host: (( grab jobs.elasticsearch_master.networks.default.static_ips.[0] ))
+      dedicated_cf_orgs: (( grab jobs.parser.properties.logstash_parser.dedicated_cf_orgs ))
 
 properties:
   cloudfoundry:
