@@ -3,12 +3,20 @@ name: smoke-tests
 
 packages:
   - cf-cli
-  - golang
+  - golang-1.8-linux
   - smoke-tests
 
 templates:
   run.erb: bin/run
   config.json.erb: bin/config.json
+
+consumes:
+- name: cloud_controller
+  type: cloud_controller
+  optional: true
+- name: elasticsearch
+  type: elasticsearch
+  optional: true
 
 properties:
   smoke_tests.api:
@@ -20,6 +28,7 @@ properties:
     description: Full URL of Cloud Foundry System Domain
   smoke_tests.admin_user:
     description: The Elastic Runtime API admin user
+    default: admin
   smoke_tests.admin_password:
     description: The Elastic Runtime API admin user's password
   smoke_tests.elasticsearch_master.host:

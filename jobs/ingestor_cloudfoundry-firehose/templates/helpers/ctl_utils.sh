@@ -154,3 +154,19 @@ check_nfs_mount() {
     fi
   fi
 }
+
+wait_for_service_on_port() {
+  n=0
+  until [ $n -ge 24 ]
+  do
+    nc -4 -z -v $1 $2 2>&1 && break
+    n=$[$n+1]
+    echo "Waiting for $1:$2 to accept connections ($n of 24)..."
+    sleep 5
+  done
+
+  if [ "$n" -ge "24" ]; then
+     echo "ERROR:  Cannot connect to $1:$2. Exiting..."
+     exit 1
+  fi
+}

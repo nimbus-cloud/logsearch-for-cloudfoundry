@@ -7,12 +7,8 @@ jobs:
 - name: ingestor
   templates:
   - (( merge ))
-  - {name: ingestor_cloudfoundry-firehose, release: logsearch-for-cloudfoundry}
-
-- name: parser
-  templates:
-  - (( merge ))
-  - {name: parser-config-lfc, release: logsearch-for-cloudfoundry}
+  - { name: ingestor_cloudfoundry-firehose, release: logsearch-for-cloudfoundry, consumes: {ingestor: nil} }
+  - { name: parser-config-lfc, release: logsearch-for-cloudfoundry }
   properties:
     logstash_parser:
       debug: false
@@ -31,7 +27,7 @@ jobs:
 - name: maintenance
   templates:
   - (( merge ))
-  - {name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry}
+  - { name: elasticsearch-config-lfc, release: logsearch-for-cloudfoundry }
   properties:
     elasticsearch_config:
       templates:
@@ -42,10 +38,19 @@ jobs:
         - index-mappings-app-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-app.json
         - index-mappings-platform-lfc: /var/vcap/jobs/elasticsearch-config-lfc/index-mappings-platform.json
 
+- name: redis
+  instances: 1
+  networks:
+  - name: default
+    static_ips: (( static_ips(15) ))
+  templates:
+  - { name: redis, release: logsearch-for-cloudfoundry }
+  persistent_disk: 1024
+  resource_pool: errand
 
 - name: cf-kibana
   templates:
-  - { release: logsearch-for-cloudfoundry, name: cf-kibana }
+  - { release: logsearch-for-cloudfoundry, name: cf-kibana, consumes: {elasticsearch: nil, redis: nil} }
   lifecycle: errand
   instances: 1
   resource_pool: errand
@@ -55,7 +60,7 @@ jobs:
 - name: smoke-tests
   templates:
   - (( replace ))
-  - { release: logsearch-for-cloudfoundry, name: smoke-tests }
+  - { release: logsearch-for-cloudfoundry, name: smoke-tests, consumes: {elasticsearch: nil} }
   lifecycle: errand
   instances: 1
   release: logsearch-for-cloudfoundry
@@ -68,7 +73,7 @@ jobs:
   release: logsearch-for-cloudfoundry
   instances: 1
   templates:
-  - {name: upload-kibana-objects, release: logsearch-for-cloudfoundry}
+  - { name: upload-kibana-objects, release: logsearch-for-cloudfoundry, consumes: {elasticsearch: nil} }
   networks:
   - name: default
   resource_pool: errand
@@ -103,7 +108,7 @@ properties:
     admin_password: admin # Passsword of the CF admin user
     firehose_client_id: firehose-to-syslog # UAA client with 'doppler.firehose' permissions
     firehose_client_secret: VAR_CF_SECRET # UAA password of client with 'doppler.firehose' permissions
-    firehose_events: LogMessage  # Default value. Comma seperated list of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
+    firehose_events: ["LogMessage"] # Default value. Array of events you would like to get. Valid options are CounterEvent,Error,HttpStartStop,LogMessage,ValueMetric,ContainerMetric.
     skip_ssl_validation: true
   cf-kibana:
     # oauth2_use_existing_client: false  # Default value. Set true to use existing UAA oauth2 client for Kibana. Note the client required scopes: `openid,oauth.approvals,scim.userids,cloud_controller.read`.
@@ -126,9 +131,8 @@ properties:
     index_prefix: "logs-"  # Name prefix of your log indices that you use in `logstash_parser.elasticsearch.index` property set for your parser.
     app_index_prefix: "logs-app"  # Name prefix of your `app` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
     platform_index_prefix: "logs-platform"  # Name prefix of your `platform` log indices. If you don't split `app` and `platform` indices, then just set it with the value of `elasticsearch_config.index_prefix`.
-  syslog:
-    host: (( grab jobs.ls-router.networks.[0].static_ips.[0] ))
-    port: 5514
+  redis:
+    host: (( grab jobs.redis.networks.default.static_ips.[0] ))
   smoke_tests:
     api: (( grab properties.cloudfoundry.api_endpoint ))
     system_domain: (( grab properties.cf-kibana.cloudfoundry.system_domain ))

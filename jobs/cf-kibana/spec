@@ -1,16 +1,30 @@
 ---
 name: cf-kibana
+
 packages:
-- cf-cli
-- cf-kibana
+  - cf-cli
+  - cf-kibana
+
+consumes:
+- name: elasticsearch
+  type: elasticsearch
+  optional: true
+- name: redis
+  type: redis
+  optional: true
+- name: cloud_controller
+  type: cloud_controller
+  optional: true
+
 templates:
   errand.sh.erb: bin/run
   manifest.yml.erb: config/manifest.yml
   kibana.yml.erb: config/kibana.yml
   allow-logsearch-access.json.erb: config/allow-logsearch-access.json
+
 properties:
   cf-kibana.app_name:
-    description: "Kibana dashoboard app name"
+    description: "Kibana dashboard app name"
     default: logs
   cf-kibana.app_memory:
     description: "Kibana app memory"
@@ -42,6 +56,7 @@ properties:
     description: "CF security group with API access"
   cf-kibana.cloudfoundry.uaa_admin_client_id:
     description: "The UAA admin client id (required scope is `uaa.admin`). The admin client is used to manage the UAA Kibana oauth2 client."
+    default: admin
   cf-kibana.cloudfoundry.uaa_admin_client_secret:
     description: "The UAA admin client's secret"
 
@@ -57,6 +72,8 @@ properties:
   cf-kibana.session_expiration_ms:
     description: "Kibana user session expiration period in milliseconds (default to 12h)"
     default: 43200000
+  cf-kibana.session_key:
+    description: "Session cookie encryption passphrase; must be >=32 bytes long"
   cf-kibana.default_app_id:
     description: "The default application to load"
     default: "dashboard/App-Overview"
@@ -72,6 +89,9 @@ properties:
   cf-kibana.plugins:
     description: "a list of key-value pairs of plugins. e.g. Kibana-auth: /var/vcap/packagaes/kibana/kibana-auth"
     default: []
+  cf-kibana.console_enabled:
+    description: "Enable Kibana development console; should be set to `false` in a multi-tenant deployment."
+    default: false
   cf-kibana.config_options:
     description: "Additional options to append to kibana configuration (YAML format)."
     default: ~
@@ -83,10 +103,15 @@ properties:
     description: "The CF API URL"
   cloudfoundry.admin_user:
     description: "Username of the admin user"
+    default: admin
   cloudfoundry.admin_password:
     description: "Password of the admin user"
   cloudfoundry.skip_ssl_validation:
     description: "Toggles cli verification of the CF API SSL certificate"
+    default: true
 
   redis.host:
     description: "Redis endpoint"
+  redis.port:
+    description: Redis port
+    default: 6379
