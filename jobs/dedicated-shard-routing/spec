@@ -6,10 +6,14 @@ description: This job uploads routing rules for events that belog to CF orgs tha
 packages: []
 
 templates:
-  bin/run.erb: bin/run
+  bin/errand.sh.erb: bin/run
+
+consumes:
+ - name: elasticsearch
+   type: elasticsearch
+   optional: true
 
 properties:
-
   dedicated-shard-routing.elasticsearch.host:
     description: Elasticsearch host
   dedicated-shard-routing.elasticsearch.port:
