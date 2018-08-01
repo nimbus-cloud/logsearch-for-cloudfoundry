@@ -17,26 +17,26 @@ set -e
 
 curl -s \
     -X PUT \
-    -d '{"index.routing.allocation.exclude.name" : "es_data_*"}' \
+    -d '{"index.routing.allocation.exclude.name" : "es_data_*,elasticsearch_platform*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/<%= p('dedicated_shard_routing.index_prefix') %>-20*/_settings'
 echo ": index routing for all"
 
 curl -s \
     -X PUT \
-    -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
+    -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "es_data_*,elasticsearch_platform*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_all-orgs'
 echo ": index template for all"
 
 <% p('dedicated_shard_routing.dedicated_cf_orgs').each do | org | %>
 curl -s \
     -X PUT \
-    -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
+    -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*,elasticsearch_platform*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_<%= org.downcase %>'
 echo ": index template for <%= org.downcase %>"
 
 curl -s \
     -X PUT \
-    -d '{"index.routing.allocation.exclude.name" : "elasticsearch_data*", "index.routing.allocation.require.name" : "es_data_<%= org.downcase %>*"}' \
+    -d '{"index.routing.allocation.exclude.name" : "elasticsearch_data*,elasticsearch_platform*", "index.routing.allocation.require.name" : "es_data_<%= org.downcase %>*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*/_settings'
 echo ": index routing for <%= org.downcase %>"
 
@@ -45,7 +45,7 @@ echo ": index routing for <%= org.downcase %>"
 <% if properties.dedicated_shard_routing.platform_logs == true %>
 curl -s \
     -X PUT \
-    -d '{"index.routing.allocation.exclude.name": "es_data_*","index.routing.allocation.require.name": "elasticsearch_platform*"}' \
+    -d '{"index.routing.allocation.exclude.name": "es_data_*,elasticsearch_data*","index.routing.allocation.require.name": "elasticsearch_platform*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/<%= p('dedicated_shard_routing.platform_index_prefix') %>*/_settings'
 echo ": index routing for paltfrom logs"
 
