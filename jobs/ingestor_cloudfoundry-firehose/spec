@@ -45,7 +45,7 @@ properties:
   cloudfoundry.firehose_client_secret:
     description: "CF UAA client secret with 'doppler.firehose' permissions"
   cloudfoundry.firehose_events:
-    description: "Comma seperated list of events you would like to get. Valid options are ContainerMetric, CounterEvent, Error, HttpStartStop, LogMessage, ValueMetric."
+    description: "List of events you would like to get. Valid options are ContainerMetric, CounterEvent, Error, HttpStartStop, LogMessage, ValueMetric."
     default: ["LogMessage"]
   cloudfoundry.firehose_subscription_id:
     description: "ID for the firehose-to-syslog subscription"
@@ -71,6 +71,12 @@ properties:
   cloudfoundry.cc_polling_request:
     description: "Cloud Controller polling requests by second"
     default: 50
+  cloudfoundry.extra_fields:
+    description: "(Optional) Additional fields to add to syslog output"
+    example:
+      extra_fields:
+        env: dev
+        foo: bar
 
   syslog.host:
     description: IP or hostname of the syslog drain

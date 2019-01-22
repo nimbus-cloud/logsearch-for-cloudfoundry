@@ -55,8 +55,7 @@ cf create-org <%= p("cf-kibana.cloudfoundry.system_org") %> || true
 cf target -o <%= p("cf-kibana.cloudfoundry.system_org") %>
 cf create-space <%= p("cf-kibana.cloudfoundry.logsearch_space") %> -o <%= p("cf-kibana.cloudfoundry.system_org") %> || true
 cf target -o <%= p("cf-kibana.cloudfoundry.system_org") %> -s <%= p("cf-kibana.cloudfoundry.logsearch_space") %>
-cf create-security-group logsearch-access /var/vcap/jobs/cf-kibana/config/allow-logsearch-access.json
-cf bind-security-group logsearch-access <%= p("cf-kibana.cloudfoundry.system_org") %> <%= p("cf-kibana.cloudfoundry.logsearch_space") %>
+cf create-security-group <%= p("cf-kibana.cloudfoundry.api_security_group") %> /var/vcap/jobs/cf-kibana/config/allow-logsearch-access.json
 cf bind-security-group <%= p("cf-kibana.cloudfoundry.api_security_group") %> <%= p("cf-kibana.cloudfoundry.system_org") %> <%= p("cf-kibana.cloudfoundry.logsearch_space") %>
 
 <% if p("cf-kibana.oauth2_use_existing_client") == true %>
