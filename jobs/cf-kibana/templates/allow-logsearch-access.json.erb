@@ -1,12 +1,12 @@
 <%
   elasticsearch_host = nil
+  elasticsearch_port = nil
   if_p('cf-kibana.elasticsearch.host') do |prop|
     elasticsearch_host = prop
   end.else do
     elasticsearch_host = link('elasticsearch').instances.first.address
   end
 
-  elasticsearch_port = nil
   if_p('cf-kibana.elasticsearch.port') do |prop|
     elasticsearch_port = prop
   end.else do
