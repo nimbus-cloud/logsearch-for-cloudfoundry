@@ -2,8 +2,8 @@
 name: smoke-tests
 
 packages:
-  - cf-cli
-  - golang-1.8-linux
+  - cf-cli-6-linux
+  - golang-1.13-linux
   - smoke-tests
 
 templates:
@@ -31,6 +31,8 @@ properties:
     default: admin
   smoke_tests.admin_password:
     description: The Elastic Runtime API admin user's password
+  smoke_tests.test_password:
+    description: Configurable Password for the test user
   smoke_tests.elasticsearch_master.host:
     description: IP of the elasticsearch master node
   smoke_tests.elasticsearch_master.port:
