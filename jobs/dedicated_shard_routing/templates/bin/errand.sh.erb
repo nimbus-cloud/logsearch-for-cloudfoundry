@@ -25,7 +25,7 @@ echo ": index routing for all"
 curl -s \
     -X PUT \
     -H 'Content-Type: application/json' \
-    -d '{"order": 1,"settings": {"index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
+    -d '{"order": 1,"settings": "number_of_shards": 1, {"index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_all-orgs'
 echo ": index template for all"
 
