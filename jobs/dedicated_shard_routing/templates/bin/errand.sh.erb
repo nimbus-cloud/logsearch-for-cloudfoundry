@@ -33,7 +33,7 @@ echo ": index template for all"
 curl -s \
     -X PUT \
     -H 'Content-Type: application/json' \
-    -d '{"order": 1,"settings": {"index": {"number_of_shards": <%= shards %>, "routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
+    -d '{"order": 1,"settings": { "number_of_shards": <%= shards %>, "index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_<%= org.downcase %>'
 echo ": index template for <%= org.downcase %>"
 
