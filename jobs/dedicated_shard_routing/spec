@@ -21,7 +21,6 @@ properties:
     default: 9200
   dedicated_shard_routing.dedicated_cf_orgs:
     description: List of Cloud Foundry orgs that should have didicated indicies
-    default: []
   dedicated_shard_routing.index_prefix:
     default: logs-app
   dedicated_shard_routing.platform_logs:
