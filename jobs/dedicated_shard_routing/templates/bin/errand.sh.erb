@@ -25,7 +25,7 @@ echo ": index routing for all"
 curl -s \
     -X PUT \
     -H 'Content-Type: application/json' \
-    -d '{"order": 110,"settings": {"number_of_shards": 1, "index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
+    -d '{"order": 110,"settings": {"number_of_shards": 1, "refresh_interval": "30s", "index": {"routing": {"allocation": {"exclude": {"name": "es_data_*"},"require": {"name": "elasticsearch_data*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-20*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_all-orgs'
 echo ": index template for all"
 
@@ -33,7 +33,7 @@ echo ": index template for all"
 curl -s \
     -X PUT \
     -H 'Content-Type: application/json' \
-    -d '{"order": 110,"settings": { "number_of_shards": <%= shards %>, "index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
+    -d '{"order": 110,"settings": { "number_of_shards": <%= shards %>, "refresh_interval": "15s", "index": {"routing": {"allocation": {"exclude": {"name": "elasticsearch_data*"},"require": {"name": "es_data_<%= org.downcase %>*"}}}}},"template": "<%= p('dedicated_shard_routing.index_prefix') %>-<%= org.downcase %>-*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_<%= org.downcase %>'
 echo ": index template for <%= org.downcase %>"
 
@@ -57,7 +57,7 @@ echo ": index routing for paltfrom logs"
 curl -s \
     -X PUT \
     -H 'Content-Type: application/json' \
-    -d '{"order": 110,"settings": { "number_of_shards": 1, "index": {"routing": {"allocation": {"exclude": {"name": "es_data_*","name": "elasticsearch_data*"},"require": {"name": "elasticsearch_platform*"}}}}},"template": "<%= p('dedicated_shard_routing.platform_index_prefix') %>*"}' \
+    -d '{"order": 110,"settings": { "number_of_shards": 1, "refresh_interval": "15s", "index": {"routing": {"allocation": {"exclude": {"name": "es_data_*","name": "elasticsearch_data*"},"require": {"name": "elasticsearch_platform*"}}}}},"template": "<%= p('dedicated_shard_routing.platform_index_prefix') %>*"}' \
     '<%= elasticsearch_host %>:<%= elasticsearch_port %>/_template/template_platform'
 echo ": index template for platfrom logs"
 <% end %>
