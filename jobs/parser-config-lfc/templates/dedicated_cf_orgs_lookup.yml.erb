@@ -1,4 +1,4 @@
 init_org-Ignore: null 
-<% p('logstash_parser.dedicated_cf_orgs').each do | org | %>
+<% p('logstash_parser.dedicated_cf_orgs').each do | org, shards | %>
 <%= org %>: <%= org %>
 <% end %>

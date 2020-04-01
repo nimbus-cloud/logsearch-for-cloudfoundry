@@ -32,4 +32,3 @@ properties:
     default: ""
   logstash_parser.dedicated_cf_orgs:
     description: "List of Cloud Foundry orgs that should have didicated indicies"
-    default: []
